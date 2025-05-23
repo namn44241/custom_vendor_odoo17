@@ -6,22 +6,23 @@ class StockWarehouse(models.Model):
     # Không cần tọa độ riêng nữa, sử dụng state
     
     def calculate_distance_to_partner(self, partner):
-        """Tính khoảng cách từ kho đến đối tác dựa trên state"""
-        if not partner or not partner.state_id or not partner.state_id.code:
+        """Tính khoảng cách từ kho đến đối tác dựa trên state của partner_id của kho."""
+        # Lấy partner đại diện cho kho (address) trước, fallback về partner của company
+        wh_partner = self.partner_id or self.company_id.partner_id
+
+        # Nếu kho hoặc partner không có state_id
+        if not wh_partner.state_id or not wh_partner.state_id.code:
             return 9999
-            
-        company_partner = self.company_id.partner_id
-        
+        if not partner.state_id or not partner.state_id.code:
+            return 9999
+
         # Nếu cùng state thì khoảng cách = 0
-        if company_partner.state_id and company_partner.state_id == partner.state_id:
+        if wh_partner.state_id == partner.state_id:
             return 0
-            
-        # Nếu khác state thì dùng bảng tọa độ
-        if not company_partner.state_id or not company_partner.state_id.code:
-            return 9999
-            
+
+        # Ngược lại tính khoảng cách qua bảng res.country.state.position
         return self.env['res.country.state.position'].calculate_distance(
-            company_partner.state_id.code, 
+            wh_partner.state_id.code,
             partner.state_id.code
         )
 

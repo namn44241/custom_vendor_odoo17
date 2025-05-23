@@ -14,41 +14,31 @@ class WarehouseFinderWizard(models.TransientModel):
     
     @api.model
     def default_get(self, fields_list):
-        res = super(WarehouseFinderWizard, self).default_get(fields_list)
-        
-        active_id = self.env.context.get('active_id')
-        if active_id:
-            sale_order = self.env['sale.order'].browse(active_id)
-            if sale_order:
-                # Tìm kho phù hợp
-                nearest_wh, available = sale_order._find_nearest_warehouse_with_stock()
-                
-                res['sale_order_id'] = sale_order.id
-                if nearest_wh:
-                    res['has_warehouse'] = True
-                    res['found_warehouse_id'] = nearest_wh.id
-                    
-                    # Lấy state của kho để hiển thị
-                    state_name = nearest_wh.company_id.partner_id.state_id.name or 'N/A'
-                    
-                    res['message'] = _('Đã tìm thấy kho phù hợp có đủ hàng: %s (tại %s)') % (nearest_wh.name, state_name)
-                else:
-                    res['has_warehouse'] = False
-                    res['message'] = _('Không tìm thấy kho nào có đủ hàng cho đơn hàng này.')
-        
+        res = super().default_get(fields_list)
+        order = self.env['sale.order'].browse(self.env.context.get('active_id') or False)
+        if order:
+            wh, ok = order._find_nearest_warehouse_with_stock()
+            res.update({
+                'sale_order_id': order.id,
+                'found_warehouse_id': wh.id if ok else False,
+                'has_warehouse': ok,
+                'message': ok and _(
+                    "Tìm được kho gần nhất: %s (State: %s)"
+                ) % (
+                    wh.name,
+                    (wh.partner_id.state_id.name or 'N/A')
+                ) or _("Không tìm được kho nào phù hợp.")
+            })
         return res
     
     def action_confirm(self):
         """Áp dụng kho đã tìm thấy vào đơn hàng"""
         self.ensure_one()
-        if self.found_warehouse_id and self.sale_order_id:
-            # Cập nhật warehouse_id cho tất cả dòng đơn hàng
-            for line in self.sale_order_id.order_line:
-                if line.product_id.type == 'product':
-                    line.warehouse_id = self.found_warehouse_id.id
-            
-            return {'type': 'ir.actions.act_window_close'}
-        
+        if self.found_warehouse_id:
+            for line in self.sale_order_id.order_line.filtered(lambda l: l.product_id.type=='product'):
+                line.warehouse_id = self.found_warehouse_id.id
+        return {'type': 'ir.actions.act_window_close'}
+    
     def action_cancel(self):
         """Đóng wizard mà không thực hiện hành động"""
         return {'type': 'ir.actions.act_window_close'} 
