@@ -27,16 +27,21 @@ class WarehouseFinderWizard(models.TransientModel):
                 ) % (
                     wh.name,
                     (wh.partner_id.state_id.name or 'N/A')
-                ) or _("Không tìm được kho nào phù hợp.")
+                ) or _("Không tìm được kho nào phù hợp. Kho gần nhất không có hàng hoặc không có tọa độ GPS."),
             })
         return res
     
     def action_confirm(self):
         """Áp dụng kho đã tìm thấy vào đơn hàng"""
         self.ensure_one()
-        if self.found_warehouse_id:
+        if self.found_warehouse_id and self.sale_order_id:
+            # Cập nhật warehouse_id của đơn hàng
+            self.sale_order_id.warehouse_id = self.found_warehouse_id.id
+            # Cập nhật warehouse_id cho từng dòng
             for line in self.sale_order_id.order_line.filtered(lambda l: l.product_id.type=='product'):
                 line.warehouse_id = self.found_warehouse_id.id
+            # Thông báo thành công
+            self.sale_order_id.message_post(body=_("Đã chọn kho gần nhất: %s") % self.found_warehouse_id.name)
         return {'type': 'ir.actions.act_window_close'}
     
     def action_cancel(self):

@@ -7,8 +7,20 @@ class SaleOrder(models.Model):
     _inherit = 'sale.order'
     
     def action_confirm(self):
+        """Khi xác nhận đơn hàng, tự động tìm kho gần nhất và cập nhật warehouse_id"""
         for order in self:
-            self._assign_nearest_warehouse(order)
+            # Tìm kho gần nhất trước khi xác nhận
+            warehouse, ok, message = order._find_nearest_warehouse_with_stock()
+            if ok and warehouse:
+                # Cập nhật warehouse_id của đơn hàng
+                order.warehouse_id = warehouse.id
+                # Cập nhật warehouse_id cho từng dòng
+                for line in order.order_line.filtered(lambda l: l.product_id.type == 'product'):
+                    line.warehouse_id = warehouse.id
+                order.message_post(body=_("Đã tự động chọn kho gần nhất: %s") % warehouse.name)
+            else:
+                order.message_post(body=_("Không tìm được kho phù hợp: %s") % message)
+        
         return super(SaleOrder, self).action_confirm()
     
     def action_assign_nearest_warehouse(self):
