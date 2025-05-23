@@ -11,6 +11,17 @@
         </field>
     </record>
     
+    <record id="stock_scrap_form_view2_inherit" model="ir.ui.view">
+        <field name="name">stock.scrap.form2.inherit</field>
+        <field name="model">stock.scrap</field>
+        <field name="inherit_id" ref="stock.stock_scrap_form_view2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='scrap_location_id']" position="before">
+                <field name="scrap_type" widget="radio"/>
+            </xpath>
+        </field>
+    </record>
+    
     <record id="stock_scrap_tree_view_inherit" model="ir.ui.view">
         <field name="name">stock.scrap.tree.inherit</field>
         <field name="model">stock.scrap</field>
