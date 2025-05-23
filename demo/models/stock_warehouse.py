@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+import math
 
 class StockWarehouse(models.Model):
     _inherit = 'stock.warehouse'
@@ -6,25 +7,26 @@ class StockWarehouse(models.Model):
     # Không cần tọa độ riêng nữa, sử dụng state
     
     def calculate_distance_to_partner(self, partner):
-        """Tính khoảng cách từ kho đến đối tác dựa trên state của partner_id của kho."""
-        # Lấy partner đại diện cho kho (address) trước, fallback về partner của company
+        """Tính khoảng cách Haversine hoàn toàn dựa trên lat/long.
+        Nếu kho hoặc khách hàng chưa có lat/lon, trả về +∞ để bỏ qua."""
+        self.ensure_one()
+        # lấy partner đại diện cho kho
         wh_partner = self.partner_id or self.company_id.partner_id
 
-        # Nếu kho hoặc partner không có state_id
-        if not wh_partner.state_id or not wh_partner.state_id.code:
-            return 9999
-        if not partner.state_id or not partner.state_id.code:
-            return 9999
+        lat1, lon1 = wh_partner.latitude, wh_partner.longitude
+        lat2, lon2 = partner.latitude, partner.longitude
+        # nếu thiếu tọa độ của kho hoặc khách, bỏ qua
+        if not all([lat1, lon1, lat2, lon2]):
+            return float('inf')
 
-        # Nếu cùng state thì khoảng cách = 0
-        if wh_partner.state_id == partner.state_id:
-            return 0
-
-        # Ngược lại tính khoảng cách qua bảng res.country.state.position
-        return self.env['res.country.state.position'].calculate_distance(
-            wh_partner.state_id.code,
-            partner.state_id.code
-        )
+        # công thức haversine
+        R = 6371.0  # bán kính Trái Đất (km)
+        φ1, φ2 = math.radians(lat1), math.radians(lat2)
+        Δφ = math.radians(lat2 - lat1)
+        Δλ = math.radians(lon2 - lon1)
+        a = math.sin(Δφ/2)**2 + math.cos(φ1)*math.cos(φ2)*math.sin(Δλ/2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        return R * c
 
     def get_location_score(self, partner):
         """Tính điểm ưu tiên kho dựa trên vị trí địa lý

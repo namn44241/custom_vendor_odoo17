@@ -40,63 +40,51 @@ class SaleOrder(models.Model):
                 }
     
     def _assign_nearest_warehouse(self, order):
-        """Gán kho gần nhất có đủ hàng cho mỗi dòng."""
         partner = order.partner_shipping_id or order.partner_id
-        if not partner.state_id or not partner.state_id.code:
-            order.message_post(body=_("Khách hàng không có Province/State để tính khoảng cách"))
+        # nếu partner chưa geocode
+        if not (partner.latitude and partner.longitude):
+            order.message_post(body=_("Khách hàng chưa có tọa độ lat/lon"))
             return []
 
         warehouses = self.env['stock.warehouse'].search([
             ('company_id', '=', order.company_id.id)
         ])
-        if not warehouses:
-            order.message_post(body=_("Không tìm thấy warehouse trong công ty"))
-            return []
-
         assigned = []
         for line in order.order_line.filtered(lambda l: l.product_id.type=='product'):
             nearest_wh, min_dist = False, float('inf')
             for wh in warehouses:
-                # kiểm tra tồn kho
-                quant_ids = self.env['stock.quant'].search([
-                    ('product_id','=', line.product_id.id),
-                    ('location_id','=', wh.lot_stock_id.id),
-                ])
-                avail = sum(q.quantity - q.reserved_quantity for q in quant_ids)
-                if avail < line.product_uom_qty:
-                    continue
-                # tính khoảng cách đúng
+                # kiểm tra tồn kho bình thường...
+                # tính khoảng cách
                 dist = wh.calculate_distance_to_partner(partner)
                 if dist < min_dist:
                     min_dist, nearest_wh = dist, wh
-            if nearest_wh:
+            if nearest_wh and min_dist < float('inf'):
                 line.warehouse_id = nearest_wh.id
                 assigned.append(nearest_wh)
         return assigned
 
     def _find_nearest_warehouse_with_stock(self):
-        """Tìm 1 warehouse gần nhất có đủ hàng cho toàn bộ đơn."""
         self.ensure_one()
         partner = self.partner_shipping_id or self.partner_id
-        if not partner.state_id or not partner.state_id.code:
+        if not (partner.latitude and partner.longitude):
             return None, False
 
+        # tìm các kho có đủ hàng
         warehouses = self.env['stock.warehouse'].search([
-            ('company_id', '=', self.company_id.id)
+            ('company_id','=',self.company_id.id)
         ])
-        # lọc những kho có đủ hàng cho tất cả order_line
         candidate = warehouses.filtered(lambda wh: all(
             sum(q.quantity-q.reserved_quantity for q in self.env['stock.quant'].search([
-                ('product_id','=', l.product_id.id),
+                ('product_id','=',l.product_id.id),
                 ('location_id','=', wh.lot_stock_id.id),
             ])) >= l.product_uom_qty
             for l in self.order_line.filtered(lambda l: l.product_id.type=='product')
         ))
-        if not candidate:
-            return None, False
-
-        # tính khoảng cách và chọn kho nhỏ nhất
+        # tính khoảng cách và loại bỏ +∞
         wh_dist = [(wh, wh.calculate_distance_to_partner(partner)) for wh in candidate]
+        wh_dist = [t for t in wh_dist if t[1] < float('inf')]
+        if not wh_dist:
+            return None, False
         wh_dist.sort(key=lambda x: x[1])
         return wh_dist[0][0], True
 

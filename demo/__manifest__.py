@@ -9,12 +9,11 @@
         - Tự động chọn kho gần nhất dựa trên GPS
     """,
     'category': 'Inventory/Inventory',
-    'author': 'Demo',
-    'website': 'https://www.example.com',
-    'depends': ['base', 'purchase', 'stock', 'sale_management'],
+    'author': 'Namn44241',
+    'website': 'https://www.namtech.me',
+    'depends': ['base', 'purchase', 'stock', 'sale_management', 'contacts'],
     'data': [
         'security/ir.model.access.csv',
-        # 'data/state_position_data.xml',
         'security/security_rules.xml',
         'views/res_partner_views.xml',
         'views/stock_scrap_views.xml',
