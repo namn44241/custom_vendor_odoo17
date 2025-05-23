@@ -9,15 +9,34 @@ class StockScrap(models.Model):
         ('return', 'Hàng trả')
     ], string='Loại hàng lỗi', default='disposal', required=True)
     
+    # Thêm trường để lưu phiếu xuất kho
+    return_picking_id = fields.Many2one('stock.picking', string='Phiếu xuất trả hàng', readonly=True)
+    
     def action_validate(self):
         result = super(StockScrap, self).action_validate()
         
         # Nếu là hàng trả, tạo phiếu xuất kho
         for scrap in self:
             if scrap.scrap_type == 'return' and scrap.state == 'done':
-                scrap._create_return_picking()
+                picking = scrap._create_return_picking()
+                if picking:
+                    scrap.return_picking_id = picking.id
         
         return result
+    
+    def action_view_return_picking(self):
+        """Mở phiếu xuất kho được tạo từ hàng trả"""
+        self.ensure_one()
+        if not self.return_picking_id:
+            return {}
+        
+        return {
+            'name': _('Phiếu xuất trả hàng'),
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'stock.picking',
+            'res_id': self.return_picking_id.id,
+        }
     
     def _create_return_picking(self):
         self.ensure_one()
@@ -29,23 +48,26 @@ class StockScrap(models.Model):
         ], limit=1)
         
         if not picking_type_out:
-            return
+            return False
         
-        # Xác định địa điểm đích
-        dest_location = self.env.ref('stock.stock_location_customers', raise_if_not_found=False)
-        
-        if not dest_location:
-            dest_location = self.env['stock.location'].search([
-                ('usage', '=', 'customer'),
-                ('company_id', '=', self.company_id.id)
-            ], limit=1)
-            
+        # Đảm bảo có địa điểm đích
+        if not picking_type_out.default_location_dest_id:
+            # Sử dụng địa điểm khách hàng mặc định
+            dest_location = self.env.ref('stock.stock_location_customers', raise_if_not_found=False)
             if not dest_location:
-                dest_location = self.env['stock.location'].create({
-                    'name': 'Customers',
-                    'usage': 'customer',
-                    'company_id': self.company_id.id,
-                })
+                dest_location = self.env['stock.location'].search([
+                    ('usage', '=', 'customer'),
+                    ('company_id', '=', self.company_id.id)
+                ], limit=1)
+                
+                if not dest_location:
+                    dest_location = self.env['stock.location'].create({
+                        'name': 'Customers',
+                        'usage': 'customer',
+                        'company_id': self.company_id.id,
+                    })
+        else:
+            dest_location = picking_type_out.default_location_dest_id
         
         # Xác định đối tác từ phiếu gốc
         partner_id = False
