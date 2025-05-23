@@ -116,4 +116,67 @@ class SaleOrder(models.Model):
                 line.warehouse_id = nearest_warehouse.id
                 line.name = f"{line.name}\n(Kho được chọn: {nearest_warehouse.name})"
         
-        return list(assigned_warehouses) 
+        return list(assigned_warehouses)
+
+    def _find_nearest_warehouse_with_stock(self):
+        """Tìm kho gần nhất có đủ hàng dựa trên tỉnh thành"""
+        self.ensure_one()
+        
+        # Sử dụng địa chỉ giao hàng hoặc địa chỉ đối tác
+        partner = self.partner_shipping_id or self.partner_id
+        if not partner:
+            return None, False
+        
+        # Lấy tất cả kho thuộc công ty hiện tại
+        warehouses = self.env['stock.warehouse'].search([
+            ('company_id', '=', self.company_id.id)
+        ])
+        
+        if not warehouses:
+            return None, False
+        
+        # Kiểm tra từng kho có đủ hàng không
+        available_warehouses = []
+        
+        for warehouse in warehouses:
+            all_available = True
+            
+            for line in self.order_line:
+                if line.product_id.type != 'product':
+                    continue
+                    
+                # Kiểm tra tồn kho
+                quants = self.env['stock.quant'].search([
+                    ('product_id', '=', line.product_id.id),
+                    ('location_id', '=', warehouse.lot_stock_id.id)
+                ])
+                
+                available_qty = sum(q.quantity - q.reserved_quantity for q in quants)
+                if available_qty < line.product_uom_qty:
+                    all_available = False
+                    break
+            
+            if all_available:
+                available_warehouses.append(warehouse)
+        
+        if not available_warehouses:
+            return None, False
+        
+        # Tìm kho gần nhất trong số kho có đủ hàng
+        warehouse_distances = [(wh, wh.calculate_distance_to_partner(partner)) for wh in available_warehouses]
+        nearest_warehouse = min(warehouse_distances, key=lambda x: x[1])[0]
+        
+        return nearest_warehouse, True
+
+    def action_open_warehouse_finder(self):
+        """Mở wizard tìm kho"""
+        self.ensure_one()
+        
+        return {
+            'name': _('Tìm kho gần nhất'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'warehouse.finder.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'active_id': self.id}
+        } 

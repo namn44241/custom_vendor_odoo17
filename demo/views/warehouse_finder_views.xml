@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_warehouse_finder_wizard" model="ir.ui.view">
+        <field name="name">warehouse.finder.wizard.form</field>
+        <field name="model">warehouse.finder.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Tìm kho gần nhất">
+                <field name="sale_order_id" invisible="1"/>
+                <field name="has_warehouse" invisible="1"/>
+                
+                <p><field name="message" readonly="1" nolabel="1"/></p>
+                
+                <div invisible="has_warehouse == False">
+                    <group>
+                        <field name="found_warehouse_id" readonly="1"/>
+                    </group>
+                </div>
+                
+                <footer>
+                    <button name="action_confirm" 
+                            string="Chọn" 
+                            type="object" 
+                            class="btn-primary" 
+                            invisible="has_warehouse == False"/>
+                    
+                    <button name="action_cancel" 
+                            string="Tiếp tục" 
+                            type="object" 
+                            class="btn-secondary" 
+                            invisible="has_warehouse == True"/>
+                    
+                    <button string="Hủy" 
+                            special="cancel" 
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo> 

@@ -1,26 +1,47 @@
 from odoo import api, fields, models
-import math
 
 class StockWarehouse(models.Model):
     _inherit = 'stock.warehouse'
     
-    latitude = fields.Float(string='Vĩ độ', digits=(16, 8))
-    longitude = fields.Float(string='Kinh độ', digits=(16, 8))
+    # Không cần tọa độ riêng nữa, sử dụng state
     
-    def calculate_distance(self, partner_lat, partner_lng):
-        """Tính khoảng cách giữa kho và đối tác theo công thức Haversine"""
-        if not self.latitude or not self.longitude or not partner_lat or not partner_lng:
-            return float('inf')
+    def calculate_distance_to_partner(self, partner):
+        """Tính khoảng cách từ kho đến đối tác dựa trên state"""
+        if not partner or not partner.state_id or not partner.state_id.code:
+            return 9999
+            
+        company_partner = self.company_id.partner_id
         
-        # Chuyển đổi độ sang radian
-        lat1, lon1 = math.radians(self.latitude), math.radians(self.longitude)
-        lat2, lon2 = math.radians(partner_lat), math.radians(partner_lng)
+        # Nếu cùng state thì khoảng cách = 0
+        if company_partner.state_id and company_partner.state_id == partner.state_id:
+            return 0
+            
+        # Nếu khác state thì dùng bảng tọa độ
+        if not company_partner.state_id or not company_partner.state_id.code:
+            return 9999
+            
+        return self.env['res.country.state.position'].calculate_distance(
+            company_partner.state_id.code, 
+            partner.state_id.code
+        )
+
+    def get_location_score(self, partner):
+        """Tính điểm ưu tiên kho dựa trên vị trí địa lý
+        - Cùng city: 100 điểm
+        - Cùng country: 50 điểm
+        - Khác cả hai: 0 điểm
+        """
+        score = 0
         
-        # Công thức Haversine
-        dlon = lon2 - lon1
-        dlat = lat2 - lat1
-        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-        c = 2 * math.asin(math.sqrt(a))
-        r = 6371  # Bán kính trái đất (km)
+        # Lấy thông tin city và country của kho
+        company_partner = self.company_id.partner_id
         
-        return c * r 
+        # So sánh City
+        if company_partner.city and partner.city and company_partner.city.lower() == partner.city.lower():
+            score += 100
+        
+        # So sánh Country
+        if company_partner.country_id and partner.country_id and company_partner.country_id == partner.country_id:
+            score += 50
+        
+        return score 

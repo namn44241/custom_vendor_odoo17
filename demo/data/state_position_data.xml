@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Dữ liệu tọa độ các tỉnh thành -->
+        <record id="state_position_lai_chau" model="res.country.state.position">
+            <field name="name">Lai Châu</field>
+            <field name="state_code">VN-01</field>
+            <field name="longitude">103.0000</field>
+            <field name="latitude">22.3860</field>
+        </record>
+        
+        <record id="state_position_lao_cai" model="res.country.state.position">
+            <field name="name">Lào Cai</field>
+            <field name="state_code">VN-02</field>
+            <field name="longitude">104.0000</field>
+            <field name="latitude">22.4833</field>
+        </record>
+        
+        <record id="state_position_ha_giang" model="res.country.state.position">
+            <field name="name">Hà Giang</field>
+            <field name="state_code">VN-03</field>
+            <field name="longitude">105.0000</field>
+            <field name="latitude">22.8333</field>
+        </record>
+        
+        <record id="state_position_cao_bang" model="res.country.state.position">
+            <field name="name">Cao Bằng</field>
+            <field name="state_code">VN-04</field>
+            <field name="longitude">106.0000</field>
+            <field name="latitude">22.6667</field>
+        </record>
+        
+        <record id="state_position_son_la" model="res.country.state.position">
+            <field name="name">Sơn La</field>
+            <field name="state_code">VN-05</field>
+            <field name="longitude">104.0000</field>
+            <field name="latitude">21.3333</field>
+        </record>
+        
+        <record id="state_position_hai_duong" model="res.country.state.position">
+            <field name="name">Hải Dương</field>
+            <field name="state_code">VN-61</field>
+            <field name="longitude">106.3000</field>
+            <field name="latitude">20.9408</field>
+        </record>
+        
+        <record id="state_position_hanoi" model="res.country.state.position">
+            <field name="name">Hà Nội</field>
+            <field name="state_code">VN-HN</field>
+            <field name="longitude">105.8500</field>
+            <field name="latitude">21.0285</field>
+        </record>
+        
+        <record id="state_position_danang" model="res.country.state.position">
+            <field name="name">Đà Nẵng</field>
+            <field name="state_code">VN-DN</field>
+            <field name="longitude">108.2000</field>
+            <field name="latitude">16.0678</field>
+        </record>
+        
+        <record id="state_position_hcm" model="res.country.state.position">
+            <field name="name">TP Hồ Chí Minh</field>
+            <field name="state_code">VN-SG</field>
+            <field name="longitude">106.7000</field>
+            <field name="latitude">10.7756</field>
+        </record>
+    </data>
+</odoo> 
