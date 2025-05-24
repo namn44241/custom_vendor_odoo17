@@ -37,7 +37,8 @@
                             class="btn-secondary" 
                             invisible="has_warehouse == True"/>
                     
-                    <button name="action_cancel" string="Hủy" type="object" class="btn-secondary"/>
+                    <button name="action_cancel" string="Hủy" type="object" invisible="has_warehouse == True" class="btn-secondary"/>
+                    <button special="cancel" string="Hủy" type="object" invisible="has_warehouse == False" class="btn-secondary"/>
                 </footer>
             </form>
         </field>
