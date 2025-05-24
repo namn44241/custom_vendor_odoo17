@@ -69,5 +69,10 @@ class WarehouseFinderWizard(models.TransientModel):
         return {'type': 'ir.actions.act_window_close'}
     
     def action_cancel(self):
-        """Đóng wizard mà không thực hiện hành động"""
+        """Đóng wizard và gọi hủy đơn hàng sale.order."""
+        self.ensure_one()
+        if self.sale_order_id:
+            # Gọi phương thức hủy đơn của sale.order
+            self.sale_order_id.action_cancel()
+        # Đóng wizard
         return {'type': 'ir.actions.act_window_close'} 
