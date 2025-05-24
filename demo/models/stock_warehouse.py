@@ -3,24 +3,19 @@ import math
 
 class StockWarehouse(models.Model):
     _inherit = 'stock.warehouse'
-    
-    # Không cần tọa độ riêng nữa, sử dụng state
-    
+        
     def calculate_distance_to_partner(self, partner):
         """Tính khoảng cách Haversine hoàn toàn dựa trên lat/long.
         Nếu kho hoặc khách hàng chưa có lat/lon, trả về +∞ để bỏ qua."""
         self.ensure_one()
-        # lấy partner đại diện cho kho
         wh_partner = self.partner_id or self.company_id.partner_id
 
         lat1, lon1 = wh_partner.latitude, wh_partner.longitude
         lat2, lon2 = partner.latitude, partner.longitude
-        # nếu thiếu tọa độ của kho hoặc khách, bỏ qua
         if not all([lat1, lon1, lat2, lon2]):
             return float('inf')
 
-        # công thức haversine
-        R = 6371.0  # bán kính Trái Đất (km)
+        R = 6371.0  
         φ1, φ2 = math.radians(lat1), math.radians(lat2)
         Δφ = math.radians(lat2 - lat1)
         Δλ = math.radians(lon2 - lon1)
@@ -35,15 +30,9 @@ class StockWarehouse(models.Model):
         - Khác cả hai: 0 điểm
         """
         score = 0
-        
-        # Lấy thông tin city và country của kho
         company_partner = self.company_id.partner_id
-        
-        # So sánh City
         if company_partner.city and partner.city and company_partner.city.lower() == partner.city.lower():
             score += 100
-        
-        # So sánh Country
         if company_partner.country_id and partner.country_id and company_partner.country_id == partner.country_id:
             score += 50
         

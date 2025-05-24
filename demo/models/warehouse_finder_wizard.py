@@ -22,7 +22,6 @@ class WarehouseFinderWizard(models.TransientModel):
         if order:
             wh, ok = order._find_nearest_warehouse_with_stock()
             
-            # Tìm kho gần nhất ngay cả khi không có hàng
             partner = order.partner_shipping_id or order.partner_id
             nearest_wh = False
             min_distance = float('inf')
@@ -38,7 +37,6 @@ class WarehouseFinderWizard(models.TransientModel):
                         min_distance = distance
                         nearest_wh = warehouse
             
-            # Cập nhật thông tin
             res.update({
                 'sale_order_id': order.id,
                 'found_warehouse_id': wh.id if ok else False,
@@ -59,12 +57,9 @@ class WarehouseFinderWizard(models.TransientModel):
         """Áp dụng kho đã tìm thấy vào đơn hàng"""
         self.ensure_one()
         if self.found_warehouse_id and self.sale_order_id:
-            # Cập nhật warehouse_id của đơn hàng
             self.sale_order_id.warehouse_id = self.found_warehouse_id.id
-            # Cập nhật warehouse_id cho từng dòng
             for line in self.sale_order_id.order_line.filtered(lambda l: l.product_id.type=='product'):
                 line.warehouse_id = self.found_warehouse_id.id
-            # Thông báo thành công
             self.sale_order_id.message_post(body=_("Đã chọn kho gần nhất: %s") % self.found_warehouse_id.name)
         return {'type': 'ir.actions.act_window_close'}
     
@@ -72,7 +67,5 @@ class WarehouseFinderWizard(models.TransientModel):
         """Đóng wizard và gọi hủy đơn hàng sale.order."""
         self.ensure_one()
         if self.sale_order_id:
-            # Gọi phương thức hủy đơn của sale.order
             self.sale_order_id.action_cancel()
-        # Đóng wizard
         return {'type': 'ir.actions.act_window_close'} 

@@ -26,16 +26,12 @@ class ResCountryStatePosition(models.Model):
         if not pos1 or not pos2:
             return 9999
         
-        # Xử lý trường hợp cùng mã tỉnh
         if state_code1 == state_code2:
             return 0
-            
-        # Tính khoảng cách theo công thức Haversine đơn giản hóa
-        # Khi ở cùng một quốc gia, chúng ta có thể sử dụng cách tính đơn giản hơn
+
         lat_diff = abs(pos1.latitude - pos2.latitude)
         long_diff = abs(pos1.longitude - pos2.longitude)
         
-        # Sử dụng Euclidean distance (đơn giản hóa)
         distance = math.sqrt(lat_diff * lat_diff + long_diff * long_diff)
         
         return distance 

@@ -17,7 +17,6 @@
                     </group>
                 </div>
                 
-                <!-- Hiển thị gợi ý kho gần nhất -->
                 <div invisible="show_nearest_suggestion == False">
                     <group string="Gợi ý kho gần nhất (không đủ hàng)">
                         <field name="nearest_warehouse_id" readonly="1"/>

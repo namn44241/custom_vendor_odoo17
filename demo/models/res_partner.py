@@ -9,7 +9,6 @@ class ResPartner(models.Model):
     is_parent_company = fields.Boolean(string='Là công ty mẹ', default=False)
     is_external_vendor = fields.Boolean(string='Là nhà cung cấp ngoài', default=False)
     
-    # Thêm các trường tọa độ GPS
     latitude = fields.Float(string='Vĩ độ', digits=(16, 8), readonly=True)
     longitude = fields.Float(string='Kinh độ', digits=(16, 8), readonly=True)
     
@@ -28,10 +27,8 @@ class ResPartner(models.Model):
     def action_fetch_geolocation(self):
         """Gọi API Nominatim để lấy lat/long theo địa chỉ hiện tại."""
         self.ensure_one()
-        # Kiểm tra đủ thông tin địa chỉ để query
         if not (self.street or self.city or self.state_id or self.country_id):
             raise UserError(_("Vui lòng nhập tối thiểu Street, City, State, Country"))
-        # Gom thành chuỗi địa chỉ
         parts = filter(None, [
             self.street,
             self.street2,
@@ -55,8 +52,6 @@ class ResPartner(models.Model):
             raise UserError(_("Không thể gọi tới dịch vụ địa lý: %s") % e)
         if not data:
             raise UserError(_("Không tìm thấy tọa độ cho địa chỉ: %s") % query)
-        # Gán kết quả
         self.latitude = float(data[0].get('lat', 0.0))
         self.longitude = float(data[0].get('lon', 0.0))
-        # Thông báo thành công
         self.message_post(body=_("Lấy tọa độ thành công: %s, %s") % (self.latitude, self.longitude)) 

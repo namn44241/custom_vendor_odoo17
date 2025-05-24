@@ -9,7 +9,6 @@ class SaleOrderLine(models.Model):
     @api.constrains('product_uom_qty')
     def _check_positive_quantity(self):
         for line in self:
-            # Chỉ kiểm tra với hàng hoá thực (type='product')
             if line.product_id.type == 'product' and line.product_uom_qty <= 0:
                 raise ValidationError(_(
                     "Số lượng cho sản phẩm '%s' phải lớn hơn 0."

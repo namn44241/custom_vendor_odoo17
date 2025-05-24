@@ -9,12 +9,9 @@ class SaleOrder(models.Model):
     def action_confirm(self):
         """Khi xác nhận đơn hàng, tự động tìm kho gần nhất và cập nhật warehouse_id"""
         for order in self:
-            # Tìm kho gần nhất trước khi xác nhận
             warehouse, ok, message = order._find_nearest_warehouse_with_stock()
             if ok and warehouse:
-                # Cập nhật warehouse_id của đơn hàng
                 order.warehouse_id = warehouse.id
-                # Cập nhật warehouse_id cho từng dòng
                 for line in order.order_line.filtered(lambda l: l.product_id.type == 'product'):
                     line.warehouse_id = warehouse.id
                 order.message_post(body=_("Đã tự động chọn kho gần nhất: %s") % warehouse.name)
@@ -53,7 +50,6 @@ class SaleOrder(models.Model):
     
     def _assign_nearest_warehouse(self, order):
         partner = order.partner_shipping_id or order.partner_id
-        # nếu partner chưa geocode
         if not (partner.latitude and partner.longitude):
             order.message_post(body=_("Khách hàng chưa có tọa độ lat/lon"))
             return []
@@ -65,8 +61,6 @@ class SaleOrder(models.Model):
         for line in order.order_line.filtered(lambda l: l.product_id.type=='product'):
             nearest_wh, min_dist = False, float('inf')
             for wh in warehouses:
-                # kiểm tra tồn kho bình thường...
-                # tính khoảng cách
                 dist = wh.calculate_distance_to_partner(partner)
                 if dist < min_dist:
                     min_dist, nearest_wh = dist, wh
@@ -81,7 +75,6 @@ class SaleOrder(models.Model):
         if not (partner.latitude and partner.longitude):
             return None, False
 
-        # tìm các kho có đủ hàng
         warehouses = self.env['stock.warehouse'].search([
             ('company_id','=',self.company_id.id)
         ])
@@ -92,7 +85,6 @@ class SaleOrder(models.Model):
             ])) >= l.product_uom_qty
             for l in self.order_line.filtered(lambda l: l.product_id.type=='product')
         ))
-        # tính khoảng cách và loại bỏ +∞
         wh_dist = [(wh, wh.calculate_distance_to_partner(partner)) for wh in candidate]
         wh_dist = [t for t in wh_dist if t[1] < float('inf')]
         if not wh_dist:
