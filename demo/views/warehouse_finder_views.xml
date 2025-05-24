@@ -32,7 +32,7 @@
                             class="btn-primary" 
                             invisible="has_warehouse == False"/>
                     
-                    <button name="action_cancel" 
+                    <button special="cancel"
                             string="Tiếp tục" 
                             type="object" 
                             class="btn-secondary" 
