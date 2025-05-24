@@ -7,12 +7,21 @@
             <form string="Tìm kho gần nhất">
                 <field name="sale_order_id" invisible="1"/>
                 <field name="has_warehouse" invisible="1"/>
+                <field name="show_nearest_suggestion" invisible="1"/>
                 
                 <p><field name="message" readonly="1" nolabel="1"/></p>
                 
                 <div invisible="has_warehouse == False">
                     <group>
                         <field name="found_warehouse_id" readonly="1"/>
+                    </group>
+                </div>
+                
+                <!-- Hiển thị gợi ý kho gần nhất -->
+                <div invisible="show_nearest_suggestion == False">
+                    <group string="Gợi ý kho gần nhất (không đủ hàng)">
+                        <field name="nearest_warehouse_id" readonly="1"/>
+                        <field name="nearest_warehouse_distance" readonly="1" string="Khoảng cách (km)"/>
                     </group>
                 </div>
                 
